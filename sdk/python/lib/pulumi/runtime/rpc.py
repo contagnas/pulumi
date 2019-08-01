@@ -360,16 +360,17 @@ async def resolve_outputs(res: 'Resource', props: 'Inputs', outputs: struct_pb2.
         log.debug(f"incoming output value translated: {value} -> {translated_value}")
         all_properties[translated_key] = translated_value
 
-    for key, value in props.items():
-        if key not in all_properties:
-            # input prop the engine didn't give us a final value for.  Just use the value passed into the resource
-            # after round-tripping it through serialization. We do the round-tripping primarily s.t. we ensure that
-            # Output values are handled properly w.r.t. unknowns.
-            input_prop = await serialize_property(value, [])
-            if input_prop is None:
-                continue
+    if not settings.is_dry_run():
+        for key, value in props.items():
+            if key not in all_properties:
+                # input prop the engine didn't give us a final value for.  Just use the value passed into the resource
+                # after round-tripping it through serialization. We do the round-tripping primarily s.t. we ensure that
+                # Output values are handled properly w.r.t. unknowns.
+                input_prop = await serialize_property(value, [])
+                if input_prop is None:
+                    continue
 
-            all_properties[key] = deserialize_property(input_prop)
+                all_properties[key] = deserialize_property(input_prop)
 
     for key, value in all_properties.items():
         # Skip "id" and "urn", since we handle those specially.
